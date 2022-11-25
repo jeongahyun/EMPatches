@@ -9,11 +9,6 @@ Extract and Merge Batches/Image patches (tf/torch), fast and self-contained digi
 * **Extract** patches
 * **Merge** the extracted patches to obtain the original image back.
 
-### *Update 0.2.1*
-- From now you don't need to manage patch images, indices seperatly.
-- Updated patches can be restored.
-  - Manage patches easily by using `update()`, `reset()` method. (See `patches.ipynb`)
-
 ### *Update 0.2.0 (New Functionalities)*
 
 * Handling of `tensorflow`/`pytorch` **Batched images** of shape `BxCxHxW` -> `pytorch` or `BxHxWxC` -> `tf`. C can be any number not limited to just RGB channels.
@@ -50,10 +45,10 @@ img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 ```python
 # load module
 emp = EMPatches()
-patches = emp.extract_patches(img, patchsize=512, overlap=0.2)
+img_patches, indices = emp.extract_patches(img, patchsize=512, overlap=0.2)
 
 # displaying 1st 10 image patches
-tiled= imgviz.tile(list(map(np.uint8, patches.imgs)),border=(255,0,0))
+tiled= imgviz.tile(list(map(np.uint8, img_patches)),border=(255,0,0))
 plt.figure()
 plt.imshow(tiled)
 ```
@@ -68,12 +63,11 @@ Now we can perform our operation on each patch independently and after we are do
 pseudo code
 '''
 # do some processing, just store the patches in the list in same order
-img_patches_processed = some_processing_func(patches.imgs)
+img_patches_processed = some_processing_func(img_patches)
 # or run your deep learning model on patches independently and then merge the predictions
-img_patches_processed = model.predict(patches.imgs)
+img_patches_processed = model.predict(img_patches)
 '''For now lets just flip channels'''
-changed_imgs = cv2.cvtColor(patches.imgs[1], cv2.COLOR_BGR2RGB)
-patches.update(changed_imgs, [1])
+img_patches[1] = cv2.cvtColor(img_patches[1], cv2.COLOR_BGR2RGB)
 ```
 ![alt text](https://github.com/Mr-TalhaIlyas/EMPatches/raw/main/screens/patched_process.png)
 
@@ -82,10 +76,10 @@ patches.update(changed_imgs, [1])
 After processing the patches if you can merge all of them back in original form as follows,
 
 ```python
-merged_img = emp.merge_patches(patches, mode='max') # or
-merged_img = emp.merge_patches(patches, mode='min') # or
-merged_img = emp.merge_patches(patches, mode='overwrite') # or
-merged_img = emp.merge_patches(patches, mode='avg') # or
+merged_img = emp.merge_patches(img_patches, indices, mode='max') # or
+merged_img = emp.merge_patches(img_patches, indices, mode='min') # or
+merged_img = emp.merge_patches(img_patches, indices, mode='overwrite') # or
+merged_img = emp.merge_patches(img_patches, indices, mode='avg') # or
 # display
 plt.figure()
 plt.imshow(merged_img.astype(np.uint8))
@@ -96,8 +90,8 @@ plt.title(Your mode)
 ## Strided Patching
 
 ```python
-patches = emp.extract_patches(img, patchsize=512, overlap=0.2, stride=128)
-tiled= imgviz.tile(list(map(np.uint8, patches.imgs)),border=(255,0,0))
+img_patches, indices = emp.extract_patches(img, patchsize=512, overlap=0.2, stride=128)
+tiled= imgviz.tile(list(map(np.uint8, img_patches)),border=(255,0,0))
 plt.figure()
 plt.imshow(tiled.astype(np.uint8))
 plt.title('Strided patching')
